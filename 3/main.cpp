@@ -11,47 +11,33 @@ namespace st = std;
 void readData(st::list<st::string> &data) {
     st::ifstream f (FILE_PATH);
     st::string lineContent;
-    auto index = 0;
-
     if(f.is_open()) {
-        while(f)    {
+        while(f.good())    {
             st::getline(f, lineContent);
             data.push_back(lineContent);
         }
     }
     else {
-        std::cout << "Couldn't open file\n";
+        st::cout << "Couldn't open file\n";
     }
     f.close();
 }
 
-void findMostCommonBit(st::list<st::string> &data, st::vector<int> &rate)  {
+char findCommonBit(st::list<st::string> &data, int index, bool mostCommon = false)  {
+    auto zeroCounter = 0, oneCounter = 0;
     auto it = data.begin();
-    for(it; it != data.end(); ++it) {
-        auto binary = *it;
-        for(auto j = 0; j < binary.length(); ++j)    {
-            auto bit = binary[j];
-            if(bit == '1')  rate[j] += 1;
-            else    rate[j] -= 1;
-        }
+    for(it; it != data.end(); ++it)    {
+        auto bit = (*it)[index];
+        if(bit == '0') zeroCounter++;
+        else    oneCounter++;
     }
-    for(auto i = 0; i < rate.size(); i++) {
-        if(rate[i] > 0) rate[i] = 1;
-        else    rate[i] = 0;
+    if((mostCommon && oneCounter >= zeroCounter) || (!mostCommon && oneCounter < zeroCounter))  {
+        return '1';
     }
+    return '0';
 }
 
-int binaryToInteger(st::vector<int> const &binary) {
-    auto sum = 0;
-    auto exp = binary.size() - 1;
-    for(auto i = 0; i < binary.size(); i++) {
-        sum += binary[i] * pow(2, exp);
-        --exp;
-    }
-    return sum;
-}
-
-int binaryToInteger(st::string const &binary) {
+int binaryToInteger(const st::string &binary) {
     auto sum = 0;
     auto exp = binary.size() - 1;
     for(auto i = 0; i < binary.size(); i++) {
@@ -62,21 +48,18 @@ int binaryToInteger(st::string const &binary) {
     return sum;
 }
 
-st::string findMostSimilarNumber(st::list<st::string> data, st::vector<int> const &commonBits)    {
-    for(auto i = 0; i < commonBits.size(); i++) {
-        char cBit;
-        if(commonBits[i] == 1) cBit = '1';
-        else cBit = '0';
-        auto it = data.begin();
-        for(it; it != data.end(); ++it) {
-            auto binary = *it;
-            auto dBit = binary[i];
-            if(dBit != cBit) {
+st::string findMostSimilarNumber(st::list<st::string> data, bool mostCommon = false) {
+    for(auto i = 0; i < 12; i++)    {
+        char commonBit = findCommonBit(data, i, mostCommon);
+        for(auto it = data.begin(); it != data.end(); ++it)  {
+            auto bit = (*it)[i];         
+            if(bit != commonBit)    {
+                if(data.size() == 1)    break;
                 it = data.erase(it);
                 --it;
             }
+            
         }
-        if(data.size() == 1) break;
     }
     return *data.begin();
 }
@@ -85,22 +68,21 @@ int main()  {
     st::list<st::string> data;
     readData(data);
 
-    st::vector<int> gammaRate(12, 0);
-    findMostCommonBit(data, gammaRate);
-    
-    st::vector<int> epsilonRate(12, 0);
-    for(auto i = 0; i < gammaRate.size(); i++)   {
-        epsilonRate[i] = !gammaRate[i];
+    st::string gammaRate = "000000000000", epsilonRate = "000000000000";
+    for(auto i = 0; i < 12; i++)    {
+        gammaRate[i] = findCommonBit(data, i, true);
+        epsilonRate[i] = findCommonBit(data, i);
     }
 
     // int powerOutput = binaryToInteger(gammaRate) * binaryToInteger(epsilonRate);         //  uncomment to find out
     // st::cout << "powerOutput= " << powerOutput << st::endl;                              //  answer to part 1
 
-    auto oxyGenRating = binaryToInteger(findMostSimilarNumber(data, gammaRate));
-    auto co2ScrubRating = binaryToInteger(findMostSimilarNumber(data, epsilonRate));
+    auto oxyGenRating = findMostSimilarNumber(data, true);
+    auto co2ScrubRating = findMostSimilarNumber(data);
 
-    auto lifeSuppRating = oxyGenRating * co2ScrubRating;
-    st::cout << lifeSuppRating;
+    st::cout << "OxygenRating binary: " << oxyGenRating << "\tDecimal: " << binaryToInteger(oxyGenRating) << st::endl;
+    st::cout << "CO2 Rating binary: " << co2ScrubRating << "\tDecimal: " << binaryToInteger(co2ScrubRating) << st::endl;
+    st::cout << "LifeSupport Rating: " << binaryToInteger(oxyGenRating) * binaryToInteger(co2ScrubRating);
 
     return 0;
 }
